@@ -1,14 +1,23 @@
-﻿using System;
-using System.Windows.Forms;
-using System.Drawing;
-using System.Threading;
-using System.Collections.Generic;
-using System.Linq;
+﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Drawing;
+using System.IO;
+using System.Linq;
+using System.Runtime.Remoting.Messaging;
+using System.Text;
+using System.Threading;
+using System.Windows.Forms;
 
 namespace ModeRetomer
 {
+
+
+
+
+
     public partial class Form1 : Form
     {
 
@@ -17,7 +26,7 @@ namespace ModeRetomer
         private readonly AutoResetEvent _taskSignal = new AutoResetEvent(false);
         private volatile bool _isWorkerRunning = false;
 
-
+        private List<Dictionary<string, object>> autotestData; 
 
         public RetomDriver m_retomDrv = null;
         //public Thread m_Thread = null;
@@ -31,40 +40,76 @@ namespace ModeRetomer
         }
         private void button1_Click(object sender, EventArgs e)
         {
-            // Создаем и настраиваем диалог выбора папки
             using (var folderDialog = new FolderBrowserDialog())
             {
                 folderDialog.Description = "Выберите папку с режимами";
-                folderDialog.SelectedPath = @"H:\www_cs\ModeRetomerThread2\Modes\"; // Начальный путь
+                folderDialog.SelectedPath = @"C:\Users\g.lubov.UNI-ENG\Desktop\М300-Т\01 ПМИ ГЗ\gzrpn_modes\";
 
-                // Показываем диалог и проверяем результат
-                if (folderDialog.ShowDialog() == DialogResult.OK)
+                if (folderDialog.ShowDialog() == DialogResult.OK) // ← ДОБАВЛЕНО "if"
                 {
+                    string selectedPath = folderDialog.SelectedPath;
                     try
                     {
-                        // Создаем менеджер режимов с выбранной папкой
-                        Console.WriteLine(folderDialog.SelectedPath);
-                        modeManager = new ModeManager(folderDialog.SelectedPath);
+                        // Загрузка режимов
+                        modeManager = new ModeManager(selectedPath);
+                        int modesCount = modeManager.modesCollection.Count;
 
-                        // Выводим информацию о загруженных режимах
-                        MessageBox.Show($"Успешно загружено {modeManager.modesCollection.Count} режимов из папки:\n{folderDialog.SelectedPath}",
-                                      "Успех", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        // Проверка autotest.json
+                        string autotestPath = Path.Combine(selectedPath, "autotest.json");
+                        bool autotestLoaded = false;
+
+                        if (File.Exists(autotestPath))
+                        {
+                            try
+                            {
+                                string json = File.ReadAllText(autotestPath, Encoding.UTF8);
+                                autotestData = JsonConvert.DeserializeObject<List<Dictionary<string, object>>>(json);
+                                autotestLoaded = (autotestData != null && autotestData.Count > 0);
+                            }
+                            catch (Exception ex)
+                            {
+                                MessageBox.Show($"Ошибка парсинга autotest.json:\n{ex.Message}",
+                                    "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            }
+                        }
+
+                        // Формируем сообщение
+                        string message = $"Успешно загружено {modesCount} режимов из папки:\n{selectedPath}";
+                        if (autotestLoaded)
+                        {
+                            message += $"\n\nЗагружено {autotestData.Count} шагов из autotest.json";
+                        }
+                        else if (File.Exists(autotestPath))
+                        {
+                            message += "\n\nФайл autotest.json найден, но не удалось загрузить данные.";
+                        }
+                        else
+                        {
+                            message += "\n\nФайл autotest.json не найден.";
+                        }
+
+                        MessageBox.Show(message, "Успех", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     }
                     catch (Exception ex)
                     {
                         MessageBox.Show($"Ошибка при загрузке режимов:\n{ex.Message}",
-                                      "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     }
                 }
                 else
                 {
                     MessageBox.Show("Выбор папки отменен", "Информация",
-                                  MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
             }
         }
 
         private void BtnProcess_Click(object sender, EventArgs e)
+        {
+            InitializeRetomAndMode();
+        }
+
+        private void InitializeRetomAndMode()
         {
             // Проверяем, что modeManager был инициализирован
             if (modeManager == null || modeManager.modesCollection == null || modeManager.modesCollection.Count == 0)
@@ -80,23 +125,6 @@ namespace ModeRetomer
             m_retomDrv = new RetomDriver();
             m_retomDrv.CreateRetom();
             m_retomDrv.m_retom.BinaryInputsEvent += m_retom_BinaryInputsEvent;
-
-            //foreach (var mode in modeManager.modesCollection)
-            //{
-            //modesInfo += $"- {mode.OutputsRetom}\n"; // Предполагается, что modesCollection - это словарь
-            //Console.WriteLine("----------------");
-            //Console.WriteLine(mode.isActiveGr3);
-            //foreach (var kvp in mode.AnalRetomGr3) { Console.WriteLine(kvp); }
-            //}
-            //MessageBox.Show(modesInfo, "Список режимов", MessageBoxButtons.OK, MessageBoxIcon.Information);
-            //foreach (var mode in modeManager.modesCollection)
-            //{
-            //var retom = new RetomDriver();
-            //retom.Contacts = mode.OutputsRetom;
-            //retom.m_stFunction = "SetOutContact";
-            //retom.RunRetom();
-            //}
-            //var mode = modeManager.modesCollection[currMode];
         }
 
         private void BtnInitRetom_Click(object sender, EventArgs e)
@@ -174,14 +202,28 @@ namespace ModeRetomer
             _workerThread = null;
             while (_taskQueue.TryDequeue(out _)) { }
         }
-
         private void button5_Click(object sender, EventArgs e)
         {
+            GoToNextMode();
+        }
+
+        private void button6_Click(object sender, EventArgs e)
+        {
+            GoToPreviousMode();
+        }
+
+        // Новый метод: перейти к следующему режиму
+        private void GoToNextMode()
+        {
+            if (modeManager?.modesCollection == null || modeManager.modesCollection.Count == 0)
+                return;
+
             if (currMode < modeManager.modesCollection.Count - 1)
             {
-                button6.Enabled = true;
+                button6.Enabled = true; // "Назад" становится доступной
                 currMode++;
                 DisplayCurrMode();
+                button5.Enabled = (currMode < modeManager.modesCollection.Count - 1); // обновляем состояние "Вперёд"
             }
             else
             {
@@ -189,13 +231,18 @@ namespace ModeRetomer
             }
         }
 
-        private void button6_Click(object sender, EventArgs e)
+        // Новый метод: перейти к предыдущему режиму
+        private void GoToPreviousMode()
         {
+            if (modeManager?.modesCollection == null || modeManager.modesCollection.Count == 0)
+                return;
+
             if (currMode > 0)
             {
-                button5.Enabled = true;
+                button5.Enabled = true; // "Вперёд" становится доступной
                 currMode--;
                 DisplayCurrMode();
+                button6.Enabled = (currMode > 0); // обновляем состояние "Назад"
             }
             else
             {
@@ -325,5 +372,176 @@ namespace ModeRetomer
         {
             m_retomDrv.RemoveRetom();
         }
+
+        private void btnAutoTest_Click(object sender, EventArgs e)
+        {
+            if (autotestData == null || autotestData.Count == 0)
+            {
+                MessageBox.Show("Данные autotest.json не загружены.", "Информация",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            var sb = new System.Text.StringBuilder();
+            sb.AppendLine($"Загружено {autotestData.Count} шагов:");
+
+            for (int i = 0; i < autotestData.Count; i++)
+            {
+                var step = autotestData[i];
+                sb.AppendLine($"\nШаг {i + 1}:");
+
+                foreach (var kvp in step)
+                {
+                    // Обработка null и специфичных типов для корректного отображения
+                    string valueStr = kvp.Value?.ToString() ?? "null";
+                    sb.AppendLine($"  {kvp.Key}: {valueStr}");
+                }
+            }
+
+            MessageBox.Show(sb.ToString(), "Содержимое autotest.json",
+                MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+
+            // Реализация воздействий в режиме автотестирования
+            currMode = 0;
+            InitializeRetomAndMode();
+
+
+            for (int i = 0; i < autotestData.Count; i++)
+            {
+                var step = autotestData[i];
+                sb.AppendLine($"\nШаг {i + 1}:");
+
+                // Логирование всех полей
+                foreach (var kvp in step)
+                {
+                    string valueStr = kvp.Value?.ToString() ?? "null";
+                    sb.AppendLine($"  {kvp.Key}: {valueStr}");
+                }
+
+                // === Обработка типа шага (type) ===
+                if (!step.TryGetValue("type", out object typeObj) || typeObj == null)
+                {
+                    MessageBox.Show($"Шаг {i + 1}: отсутствует поле 'type'", "Ошибка",
+                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    continue;
+                }
+
+                string type = typeObj.ToString();
+
+                switch (type.ToLowerInvariant())
+                {
+                    case "run":
+                        // Обрабатываем действие (action)
+                        if (step.TryGetValue("action", out object actionObj) &&
+                            actionObj != null &&
+                            int.TryParse(actionObj.ToString(), out int action))
+                        {
+                            ExecuteAction(action);
+                        }
+                        else
+                        {
+                            MessageBox.Show($"Шаг {i + 1}: отсутствует или некорректное поле 'action'", "Ошибка",
+                                MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        }
+                        break;
+
+                    case "pause":
+                        string message = step.TryGetValue("message", out object msgObj)
+                            ? msgObj?.ToString() ?? "Пауза"
+                            : "Пауза";
+
+                        // Показываем сообщение и ждём подтверждения (или просто паузу)
+                        ShowPauseMessage(message);
+
+                        break;
+
+                    default:
+                        MessageBox.Show($"Неизвестный тип шага: {type}", "Предупреждение",
+                            MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        break;
+                }
+
+                // === Обработка длительности (если есть) ===
+                if (step.TryGetValue("duration_sec", out object durationObj) &&
+                    durationObj != null &&
+                    int.TryParse(durationObj.ToString(), out int durationSec) &&
+                    durationSec > 0)
+                {
+                    Thread.Sleep(durationSec * 1000); // Пауза в миллисекундах
+                }
+            }
+        }
+
+        private void ExecuteAction(int action)
+                {
+                    switch (action)
+                    {
+                        case 1:
+                            ApplyCurrentMode(); // Применить текущий режим
+                            break;
+                        case 2:
+                            GoToNextMode(); // Перейти к следующему режиму
+                            break;
+                        case 3:
+                            SendDisableCommand(); // Отправить команду Disable
+                            break;
+                        // Добавьте другие действия по мере необходимости
+                        default:
+                            MessageBox.Show($"Неизвестное действие: {action}", "Предупреждение",
+                                MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                            break;
+                    }
+                }
+
+        private void ShowPauseMessage(string message)
+        {
+            // Так как мы можем быть в фоновом потоке, используем Invoke
+            if (InvokeRequired)
+            {
+                Invoke(new Action<string>(ShowPauseMessage), message);
+                return;
+            }
+
+            MessageBox.Show(message, "Пауза автотеста",
+                MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+
+        private void ApplyCurrentMode()
+        {
+            if (m_retomDrv == null || modeManager == null || currMode >= modeManager.modesCollection.Count)
+                return;
+
+            var mode = modeManager.modesCollection[currMode];
+            m_retomDrv.AnalGr1 = mode.AnalRetomGr1;
+            m_retomDrv.AnalGr2 = mode.AnalRetomGr2;
+            m_retomDrv.AnalGr3 = mode.AnalRetomGr3;
+            m_retomDrv.AnalGr4 = mode.AnalRetomGr4;
+            m_retomDrv.Contacts = mode.OutputsRetom;
+            m_retomDrv.m_stFunction = "Out61";
+            //RunFunction();
+        }
+
+        private void SendDisableCommand()
+        {
+            if (m_retomDrv == null) return;
+            m_retomDrv.m_stFunction = "Disable";
+            RunFunction();
+        }
+
+
+
+
+
+
     }
+
+
+
+
+
+
+
+
 }
+

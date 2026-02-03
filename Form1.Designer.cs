@@ -191,6 +191,7 @@ namespace ModeRetomer
             this.BtnResetConts = new System.Windows.Forms.Button();
             this.button3 = new System.Windows.Forms.Button();
             this.removeRetomBtn = new System.Windows.Forms.Button();
+            this.btnAutoTest = new System.Windows.Forms.Button();
             this.panel1.SuspendLayout();
             this.groupBox4.SuspendLayout();
             this.groupBox3.SuspendLayout();
@@ -203,7 +204,7 @@ namespace ModeRetomer
             // 
             this.button1.Location = new System.Drawing.Point(12, 395);
             this.button1.Name = "button1";
-            this.button1.Size = new System.Drawing.Size(218, 58);
+            this.button1.Size = new System.Drawing.Size(139, 58);
             this.button1.TabIndex = 0;
             this.button1.Text = "Инициализировать режимы из папки";
             this.button1.UseVisualStyleBackColor = true;
@@ -211,9 +212,9 @@ namespace ModeRetomer
             // 
             // BtnProcess
             // 
-            this.BtnProcess.Location = new System.Drawing.Point(257, 395);
+            this.BtnProcess.Location = new System.Drawing.Point(157, 395);
             this.BtnProcess.Name = "BtnProcess";
-            this.BtnProcess.Size = new System.Drawing.Size(215, 58);
+            this.BtnProcess.Size = new System.Drawing.Size(119, 58);
             this.BtnProcess.TabIndex = 1;
             this.BtnProcess.Text = "Пуск режимов";
             this.BtnProcess.UseVisualStyleBackColor = true;
@@ -1922,7 +1923,7 @@ namespace ModeRetomer
             // 
             // BtnResetConts
             // 
-            this.BtnResetConts.Location = new System.Drawing.Point(588, 398);
+            this.BtnResetConts.Location = new System.Drawing.Point(661, 398);
             this.BtnResetConts.Name = "BtnResetConts";
             this.BtnResetConts.Size = new System.Drawing.Size(128, 55);
             this.BtnResetConts.TabIndex = 12;
@@ -1932,7 +1933,7 @@ namespace ModeRetomer
             // 
             // button3
             // 
-            this.button3.Location = new System.Drawing.Point(729, 398);
+            this.button3.Location = new System.Drawing.Point(807, 398);
             this.button3.Name = "button3";
             this.button3.Size = new System.Drawing.Size(128, 55);
             this.button3.TabIndex = 13;
@@ -1952,11 +1953,22 @@ namespace ModeRetomer
             this.removeRetomBtn.UseVisualStyleBackColor = false;
             this.removeRetomBtn.Click += new System.EventHandler(this.removeRetomBtn_Click);
             // 
+            // btnAutoTest
+            // 
+            this.btnAutoTest.Location = new System.Drawing.Point(282, 398);
+            this.btnAutoTest.Name = "btnAutoTest";
+            this.btnAutoTest.Size = new System.Drawing.Size(228, 55);
+            this.btnAutoTest.TabIndex = 15;
+            this.btnAutoTest.Text = "Запуск автотеста";
+            this.btnAutoTest.UseVisualStyleBackColor = true;
+            this.btnAutoTest.Click += new System.EventHandler(this.btnAutoTest_Click);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1294, 460);
+            this.Controls.Add(this.btnAutoTest);
             this.Controls.Add(this.removeRetomBtn);
             this.Controls.Add(this.button3);
             this.Controls.Add(this.BtnResetConts);
@@ -2155,6 +2167,7 @@ namespace ModeRetomer
         private System.Windows.Forms.TextBox TextBoxIA5h;
         private System.Windows.Forms.Label label31;
         private System.Windows.Forms.Button removeRetomBtn;
+        private System.Windows.Forms.Button btnAutoTest;
     }
 }
 

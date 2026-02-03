@@ -256,6 +256,8 @@ namespace ModeRetomer
 
             var trueValues = new HashSet<string> { "true", "1", "yes", "да" };
 
+
+
             OutputsRetom = NormInputs.Values
                 .Select(v => trueValues.Contains(v?.ToLower()?.Trim() ?? ""))
                 .ToList();

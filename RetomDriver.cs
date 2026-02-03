@@ -1,13 +1,15 @@
 ﻿
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
+using System.Runtime.InteropServices;
+using System.Runtime.Remoting.Messaging;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using System.Runtime.InteropServices;
-using System.Diagnostics;
-using System.Threading;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.Window;
 
 
 namespace ModeRetomer
@@ -34,12 +36,12 @@ namespace ModeRetomer
             try
             {
                 m_retom = new RTDI.DualServer();
-                
 
                 // Добавляем проверку успешности создания
                 if (m_retom != null)
                 {
                     m_nIsOpen = 1; // Устанавливаем флаг успешного создания
+                    //m_retom.SetMaxUI(100, 10); неработает
                     return true;
                 }
 
@@ -62,27 +64,65 @@ namespace ModeRetomer
             {
                 if (m_stFunction == "Open")
                 {
+
+                    Console.WriteLine(m_nResultReturn.ToString());
+                    if (m_retom == null)
+                    {
+                        string message = "Объект m_retom не инициализирован (равен null).\n\n" +
+                                       "Проверьте инициализацию объекта в конструкторе или методе инициализации.";
+                        string caption = "Ошибка инициализации";
+
+                        MessageBox.Show(message, caption,
+                                      MessageBoxButtons.OK,
+                                      MessageBoxIcon.Error);
+                        return;
+                    }
+
                     m_nIsOpen = 0;
                     m_nResultReturn = m_retom.Close();
-                    m_nResultReturn = m_retom.SetWorkParam("RetomType_66");
-                    m_nIsOpen = m_retom.Open("IP:192.168.11.120", 0);
+                    //m_nResultReturn = m_retom.SetWorkParam("RetomType_66");
+                    // m_nIsOpen = m_retom.Open("IP:192.168.11.120", 0);
+                    m_nResultReturn = m_retom.SetWorkParam("RetomType_51");
+                    m_nIsOpen = m_retom.Open("USB", 0);
                     m_nResultReturn = m_nIsOpen;
+                    //var testtest = m_retom.ServerInfo;
+                    Console.WriteLine(m_nResultReturn.ToString());
+                    if (m_retom == null)
+                    {
+                        string message = "Объект m_retom не инициализирован (равен null).\n\n" +
+                                       "Проверьте инициализацию объекта в конструкторе или методе инициализации.";
+                        string caption = "Ошибка инициализации";
+
+                        MessageBox.Show(message, caption,
+                                      MessageBoxButtons.OK,
+                                      MessageBoxIcon.Error);
+                        return;
+                    }
+
                 }
                 else
                     if (m_nIsOpen > 0) 
                 {
                     switch (m_stFunction)
                     {
+                        //case "SetOutContact":
+                            //short nNumCont = 0;
+                            //Contacts.ForEach(value => 
+                            //{
+                                //m_nResultReturn = m_retom.SetOutContact(nNumCont, value);
+                                //nNumCont++;
+                            //}
+                            //);
+
                         case "SetOutContact":
                             short nNumCont = 0;
-                            Contacts.ForEach(value => 
+                            foreach (var value in Contacts.Take(4)) // первые 8 элементов (индексы 0–7)
                             {
                                 m_nResultReturn = m_retom.SetOutContact(nNumCont, value);
                                 nNumCont++;
                             }
-                            );
-
                             break;
+
                         case "Close":
                             m_nResultReturn = m_retom.Close();
                             if (m_nResultReturn > 0)
@@ -104,15 +144,15 @@ namespace ModeRetomer
                             channels.SetSinSignal(nChannel: 3, dAmpl: AnalGr1[0], dPhase: AnalGr1[1]);
                             channels.SetSinSignal(nChannel: 4, dAmpl: AnalGr1[2], dPhase: AnalGr1[3]);
                             channels.SetSinSignal(nChannel: 5, dAmpl: AnalGr1[4], dPhase: AnalGr1[5]);
-                            channels.AddHarmonica(nChannel: 3, dAmpl: AnalGr1[0], dPhase: AnalGr1[1], dFreq: 50, dExp: 0);
-                            channels.AddHarmonica(nChannel: 4, dAmpl: AnalGr1[2], dPhase: AnalGr1[3], dFreq: 50, dExp: 0);
-                            channels.AddHarmonica(nChannel: 5, dAmpl: AnalGr1[4], dPhase: AnalGr1[5], dFreq: 50, dExp: 0);
-                            channels.AddHarmonica(nChannel: 3, dAmpl: AnalGr3[0], dPhase: 0, dFreq: 100, dExp: 0);
-                            channels.AddHarmonica(nChannel: 4, dAmpl: AnalGr3[1], dPhase: 240, dFreq: 100, dExp: 0);
-                            channels.AddHarmonica(nChannel: 5, dAmpl: AnalGr3[2], dPhase: 120, dFreq: 100, dExp: 0);
-                            channels.AddHarmonica(nChannel: 3, dAmpl: AnalGr4[0], dPhase: 0, dFreq: 250, dExp: 0);
-                            channels.AddHarmonica(nChannel: 4, dAmpl: AnalGr4[1], dPhase: 240, dFreq: 250, dExp: 0);
-                            channels.AddHarmonica(nChannel: 5, dAmpl: AnalGr4[2], dPhase: 120, dFreq: 250, dExp: 0);
+                            //channels.AddHarmonica(nChannel: 3, dAmpl: AnalGr1[0], dPhase: AnalGr1[1], dFreq: 50, dExp: 0);
+                            //channels.AddHarmonica(nChannel: 4, dAmpl: AnalGr1[2], dPhase: AnalGr1[3], dFreq: 50, dExp: 0);
+                            //channels.AddHarmonica(nChannel: 5, dAmpl: AnalGr1[4], dPhase: AnalGr1[5], dFreq: 50, dExp: 0);
+                            //channels.AddHarmonica(nChannel: 3, dAmpl: AnalGr3[0], dPhase: 0, dFreq: 100, dExp: 0);
+                            //channels.AddHarmonica(nChannel: 4, dAmpl: AnalGr3[1], dPhase: 240, dFreq: 100, dExp: 0);
+                            //channels.AddHarmonica(nChannel: 5, dAmpl: AnalGr3[2], dPhase: 120, dFreq: 100, dExp: 0);
+                            //channels.AddHarmonica(nChannel: 3, dAmpl: AnalGr4[0], dPhase: 0, dFreq: 250, dExp: 0);
+                            //channels.AddHarmonica(nChannel: 4, dAmpl: AnalGr4[1], dPhase: 240, dFreq: 250, dExp: 0);
+                            //channels.AddHarmonica(nChannel: 5, dAmpl: AnalGr4[2], dPhase: 120, dFreq: 250, dExp: 0);
                             object ob1 = channels;
 
                             RTDI.CoAnalogOutputs channels1 = m_retom.NewAnalogChannels();
@@ -126,8 +166,15 @@ namespace ModeRetomer
                             object ob2 = channels1;
 
                             m_nResultReturn = m_retom.Enable();
-                            m_nResultReturn = m_retom.Out61(ref ob1, RTLink.Constants.RT_UI_ALL, ref ob2, RTLink.Constants.RT_UI_ALL);
-                            //m_nResultReturn = m_retom.Out(ref ob1, RTLink.Constants.RT_UI_ALL);
+                            //m_nResultReturn = m_retom.Out61(ref ob1, RTLink.Constants.RT_UI_ALL, ref ob2, RTLink.Constants.RT_UI_ALL);
+
+                            m_retom.SetTimeOut(20);
+                            m_nResultReturn = m_retom.Out(ref ob1, RTLink.Constants.RT_UI_ALL);
+
+
+                            //var info = m_retom.ServerInfo.maxI;
+                            //MessageBox.Show(info.ToString());
+
                             //Thread.Sleep(4000);
                             //channels.AddHarmonica(nChannel: 3, dAmpl: 2, dPhase: 0, dFreq: 100, dExp: 0);
                             //channels.SetSinSignal(3, 2, 0);

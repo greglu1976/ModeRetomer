@@ -290,6 +290,8 @@ namespace ModeRetomer
 
         void m_retom_BinaryInputsEvent(short nGroup, int dwBinaryInput)
         {
+
+            MessageBox.Show("111");
             // Обеспечим выполнение в UI-потоке
             if (panel1.InvokeRequired)
             {
@@ -298,7 +300,7 @@ namespace ModeRetomer
             }
             Label[] Currlabels = { LblInScurr1, LblInScurr2, LblInScurr3, LblInScurr4, LblInScurr5, LblInScurr6, LblInScurr7, LblInScurr8, LblInScurr9, LblInScurr10, LblInScurr11, LblInScurr12, LblInScurr13, LblInScurr14, LblInScurr15, LblInScurr16 };
             // Преобразуем dwBinaryInput в биты (младший бит - вход 1)
-            for (int i = 0; i < 16; i++)
+            for (int i = 0; i < 8; i++)
             {
                 bool isActive = (dwBinaryInput & (1 << i)) != 0;
                 Currlabels[i].BackColor = isActive ? Color.Red : Color.Green;

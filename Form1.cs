@@ -291,7 +291,6 @@ namespace ModeRetomer
         void m_retom_BinaryInputsEvent(short nGroup, int dwBinaryInput)
         {
 
-            MessageBox.Show("111");
             // Обеспечим выполнение в UI-потоке
             if (panel1.InvokeRequired)
             {

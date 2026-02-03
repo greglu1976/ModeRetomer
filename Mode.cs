@@ -16,7 +16,7 @@ namespace ModeRetomer
         public Dictionary<string, string> NormOutputs { get; private set; } // Словарь для создания выходов на GUI
         public List<double> AnalRetomGr1 { get; private set; }
         public List<double> AnalRetomGr2 { get; private set; }
-        public List<double> AnalRetomGr3{ get; private set; }
+        public List<double> AnalRetomGr3 { get; private set; }
         public List<double> AnalRetomGr4 { get; private set; }
         public bool isActiveGr1 { get; private set; }
         public bool isActiveGr2 { get; private set; }
@@ -26,7 +26,29 @@ namespace ModeRetomer
         public string ModeName { get; private set; }
 
 
-        public Mode(string filePath, Dictionary<string, string> inputsJSON, Dictionary<string, string> outputsJSON, string ModeName_)
+        // Конструктор для работы с List<KeyValuePair> (сохраняет порядок)
+        public Mode(string filePath, List<KeyValuePair<string, string>> inputsJSON,
+                   List<KeyValuePair<string, string>> outputsJSON, string ModeName_)
+        {
+            if (string.IsNullOrWhiteSpace(filePath))
+                throw new ArgumentException("File path cannot be null or empty.", nameof(filePath));
+
+            // Инициализация словарей
+            SgfParameters = new Dictionary<string, string>();
+            Settings = new Dictionary<string, string>();
+            Inputs = new Dictionary<string, string>();
+            Outputs = new Dictionary<string, string>();
+            ModeName = ModeName_;
+
+            // Загрузка данных из файла
+            LoadDataFromExcel(filePath);
+            NormDicts(inputsJSON, outputsJSON);
+            CreateSignalLists();
+        }
+
+        // Перегрузка конструктора для работы с Dictionary (сохраняет порядок в .NET Core 3.0+)
+        public Mode(string filePath, Dictionary<string, string> inputsJSON,
+                   Dictionary<string, string> outputsJSON, string ModeName_)
         {
             if (string.IsNullOrWhiteSpace(filePath))
                 throw new ArgumentException("File path cannot be null or empty.", nameof(filePath));
@@ -86,6 +108,59 @@ namespace ModeRetomer
             }
         }
 
+        // Метод для работы с List<KeyValuePair> (гарантированное сохранение порядка)
+        private void NormDicts(List<KeyValuePair<string, string>> inputsJSON, List<KeyValuePair<string, string>> outputsJSON)
+        {
+            const int requiredCount = 16;
+            NormInputs = new Dictionary<string, string>();
+            NormOutputs = new Dictionary<string, string>();
+
+            // Обработка входов (Inputs) - порядок из inputsJSON сохраняется
+            int inputProcessed = 0;
+            foreach (var kvp in inputsJSON) // ← порядок гарантирован, так как это List
+            {
+                if (inputProcessed >= requiredCount) break;
+
+                var excelKey = kvp.Key;
+                var jsonValue = kvp.Value;
+
+                if (Inputs.ContainsKey(excelKey))
+                {
+                    NormInputs[jsonValue] = Inputs[excelKey];
+                    inputProcessed++;
+                }
+            }
+
+            // Заполнение резервных входов
+            for (int i = inputProcessed; i < requiredCount; i++)
+            {
+                NormInputs[$"Вход {i + 1}"] = "0";
+            }
+
+            // Обработка выходов (Outputs) - порядок из outputsJSON сохраняется
+            int outputProcessed = 0;
+            foreach (var kvp in outputsJSON)
+            {
+                if (outputProcessed >= requiredCount) break;
+
+                var excelKey = kvp.Key;          // ключ из Excel (например, "Relay1")
+                var guiLabel = kvp.Value;        // метка для GUI (например, "Отключение")
+
+                if (Outputs.ContainsKey(excelKey))
+                {
+                    NormOutputs[guiLabel] = Outputs[excelKey];
+                    outputProcessed++;
+                }
+            }
+
+            // Заполнение резервных выходов
+            for (int i = outputProcessed; i < requiredCount; i++)
+            {
+                NormOutputs[$"Выход {i + 1}"] = "0";
+            }
+        }
+
+        // Метод для работы с Dictionary (для .NET Core 3.0+ порядок сохраняется)
         private void NormDicts(Dictionary<string, string> inputsJSON, Dictionary<string, string> outputsJSON)
         {
             const int requiredCount = 16;
@@ -94,11 +169,14 @@ namespace ModeRetomer
 
             // Обработка входов (Inputs)
             int inputProcessed = 0;
-            foreach (var excelKey in Inputs.Keys)
+            foreach (var kvp in inputsJSON) // В .NET Core 3.0+ Dictionary сохраняет порядок вставки
             {
-                if (inputProcessed >= requiredCount) break; // Прекращаем после 16 элементов
+                if (inputProcessed >= requiredCount) break;
 
-                if (inputsJSON.TryGetValue(excelKey, out string jsonValue))
+                var excelKey = kvp.Key;
+                var jsonValue = kvp.Value;
+
+                if (Inputs.ContainsKey(excelKey))
                 {
                     NormInputs[jsonValue] = Inputs[excelKey];
                     inputProcessed++;
@@ -113,13 +191,16 @@ namespace ModeRetomer
 
             // Обработка выходов (Outputs)
             int outputProcessed = 0;
-            foreach (var excelKey in Outputs.Keys)
+            foreach (var kvp in outputsJSON)
             {
-                if (outputProcessed >= requiredCount) break; // Прекращаем после 16 элементов
+                if (outputProcessed >= requiredCount) break;
 
-                if (outputsJSON.TryGetValue(excelKey, out string jsonValue))
+                var excelKey = kvp.Key;
+                var guiLabel = kvp.Value;
+
+                if (Outputs.ContainsKey(excelKey))
                 {
-                    NormOutputs[jsonValue] = Outputs[excelKey];
+                    NormOutputs[guiLabel] = Outputs[excelKey];
                     outputProcessed++;
                 }
             }
@@ -256,8 +337,7 @@ namespace ModeRetomer
 
             var trueValues = new HashSet<string> { "true", "1", "yes", "да" };
 
-
-
+            // Получаем значения в порядке, в котором они были добавлены в NormInputs
             OutputsRetom = NormInputs.Values
                 .Select(v => trueValues.Contains(v?.ToLower()?.Trim() ?? ""))
                 .ToList();

@@ -35,7 +35,7 @@ namespace ModeRetomer
             using (var folderDialog = new FolderBrowserDialog())
             {
                 folderDialog.Description = "Выберите папку с режимами";
-                folderDialog.SelectedPath = @"H:\www_cs\ModeRetomerThread2\Modes\"; // Начальный путь
+                folderDialog.SelectedPath = @"C:\Users\g.lubov.UNI-ENG\Desktop\М300-Т\01 ПМИ ГЗ\gzrpn_modes\"; // Начальный путь
 
                 // Показываем диалог и проверяем результат
                 if (folderDialog.ShowDialog() == DialogResult.OK)
@@ -74,42 +74,39 @@ namespace ModeRetomer
                 return;
             }
 
-            DisplayCurrMode();
+
+            // Если уже есть драйвер — удаляем старый
+            if (m_retomDrv != null)
+            {
+                m_retomDrv.m_retom.BinaryInputsEvent -= m_retom_BinaryInputsEvent; // Отписываемся
+                m_retomDrv.RemoveRetom(); // Освобождаем ресурсы
+            }
+
 
             // Создаем РЕТОМ
             m_retomDrv = new RetomDriver();
             m_retomDrv.CreateRetom();
+
             m_retomDrv.m_retom.BinaryInputsEvent += m_retom_BinaryInputsEvent;
 
-            //foreach (var mode in modeManager.modesCollection)
-            //{
-            //modesInfo += $"- {mode.OutputsRetom}\n"; // Предполагается, что modesCollection - это словарь
-            //Console.WriteLine("----------------");
-            //Console.WriteLine(mode.isActiveGr3);
-            //foreach (var kvp in mode.AnalRetomGr3) { Console.WriteLine(kvp); }
-            //}
-            //MessageBox.Show(modesInfo, "Список режимов", MessageBoxButtons.OK, MessageBoxIcon.Information);
-            //foreach (var mode in modeManager.modesCollection)
-            //{
-            //var retom = new RetomDriver();
-            //retom.Contacts = mode.OutputsRetom;
-            //retom.m_stFunction = "SetOutContact";
-            //retom.RunRetom();
-            //}
-            //var mode = modeManager.modesCollection[currMode];
+            DisplayCurrMode();
+
         }
 
         private void BtnInitRetom_Click(object sender, EventArgs e)
         {
+
             m_retomDrv.m_stFunction = "Open";
-            RunFunction();
+            m_retomDrv.RunRetom();
+            //RunFunction();
             LblError.Text = m_retomDrv.m_nIsOpen.ToString();
         }
 
         private void BtnCloseRetom_Click(object sender, EventArgs e)
         {
             m_retomDrv.m_stFunction = "Close";
-            RunFunction();
+            m_retomDrv.RunRetom();
+            //RunFunction();
             LblError.Text = m_retomDrv.m_nIsOpen.ToString();
         }
 
@@ -279,18 +276,20 @@ namespace ModeRetomer
             m_retomDrv.AnalGr4 = modeManager.modesCollection[currMode].AnalRetomGr4;
             m_retomDrv.Contacts = modeManager.modesCollection[currMode].OutputsRetom;
             m_retomDrv.m_stFunction = "Out61";
-            RunFunction();
+            m_retomDrv.RunRetom(); // !!! ТАК РАБОТАЕТ
+            //RunFunction(); // ТАК НЕ РАБОТАЕТ
         }
 
         private void button2_Click(object sender, EventArgs e)
         {
             m_retomDrv.m_stFunction = "Disable";
-            RunFunction();
+            m_retomDrv.RunRetom();
+            //RunFunction();
         }
 
         void m_retom_BinaryInputsEvent(short nGroup, int dwBinaryInput)
         {
-
+            //MessageBox.Show("111");
             // Обеспечим выполнение в UI-потоке
             if (panel1.InvokeRequired)
             {
@@ -311,14 +310,16 @@ namespace ModeRetomer
         {
             m_retomDrv.Contacts = Enumerable.Repeat(false, 16).ToList();
             m_retomDrv.m_stFunction = "SetOutContact";
-            RunFunction();
+            m_retomDrv.RunRetom();
+            //RunFunction();
         }
 
         private void button3_Click(object sender, EventArgs e)
         {
             m_retomDrv.Contacts = modeManager.modesCollection[currMode].OutputsRetom;
             m_retomDrv.m_stFunction = "SetOutContact";
-            RunFunction();
+            m_retomDrv.RunRetom();
+            //RunFunction();
         }
 
         private void removeRetomBtn_Click(object sender, EventArgs e)
